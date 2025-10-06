@@ -1,7 +1,7 @@
 {
     "name": "Demo DotNet Golden Workflow",
     "description": "Oemo DotNet Golden CI workflow template.",
-    "iconName": "example-icon",
+    "iconName": "octicon smiley",
     "categories": [
         "C#"
     ],
