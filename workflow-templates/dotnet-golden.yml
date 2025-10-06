@@ -1,0 +1,92 @@
+# .github/workflow-templates/dotnet-golden.yml
+name: .NET Golden Pipeline Template
+
+on:
+  push:
+    branches: [ main, develop, release/* ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Nightly build at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      deploy-to-production:
+        description: 'Deploy to production'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOTNET_VERSION: '7.0.x'
+  BUILD_CONFIGURATION: 'Release'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: 'Build'
+    uses: ./.github/workflows/reusable/dotnet-build.yml
+    with:
+      dotnet-version: '7.0.x'
+      build-configuration: 'Release'
+      
+  test:
+    name: 'Test'
+    needs: build
+    uses: ./.github/workflows/reusable/dotnet-test.yml
+    with:
+      dotnet-version: '7.0.x'
+      build-configuration: 'Release'
+      
+  security-scan:
+    name: 'Security Analysis'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: csharp
+          
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+        
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        
+  package:
+    name: 'Create NuGet Package'
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          
+      - name: Create NuGet package
+        run: |
+          dotnet pack src/MyApp/MyApp.csproj \
+            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --output ./packages \
+            /p:PackageVersion=${{ needs.build.outputs.version }}
+            
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./packages/*.nupkg
