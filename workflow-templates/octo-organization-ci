@@ -1,3 +1,5 @@
+# Companion for https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations#workflow-templates
+
 name: Octo Organization CI
 on:
   push:
