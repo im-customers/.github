@@ -1,5 +1,5 @@
 {
-    "name": "Quest Diagnostics Demo WF workflow template",
+    "name": "Simple Demo workflow template",
     "description": "This is a custom workflow template for Quest Diagnostics.",
     "iconName": "test-template-icon",
     "categories": [
